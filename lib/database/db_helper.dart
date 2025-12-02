@@ -1,7 +1,9 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
 import '../models/note.dart';
+import 'web_storage_helper.dart';
 
 class DBHelper {
   static final DBHelper _instance = DBHelper._internal();
@@ -12,6 +14,9 @@ class DBHelper {
 
   // Singleton pattern - ensure only one database connection
   Future<Database> get database async {
+    if (kIsWeb) {
+      throw UnsupportedError('SQLite is not supported on web');
+    }
     if (_database != null) return _database!;
     _database = await _initDatabase();
     return _database!;
@@ -44,6 +49,10 @@ class DBHelper {
 
   // CREATE - Insert a new note
   Future<Note> createNote(Note note) async {
+    if (kIsWeb) {
+      return await WebStorageHelper.createNote(note);
+    }
+    
     final db = await database;
     final id = await db.insert(
       'notes',
@@ -56,6 +65,10 @@ class DBHelper {
 
   // READ - Get all notes
   Future<List<Note>> readAllNotes() async {
+    if (kIsWeb) {
+      return await WebStorageHelper.readAllNotes();
+    }
+    
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'notes',
@@ -69,6 +82,10 @@ class DBHelper {
 
   // READ - Get a specific note by id
   Future<Note?> readNote(int id) async {
+    if (kIsWeb) {
+      return await WebStorageHelper.readNote(id);
+    }
+    
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'notes',
@@ -84,6 +101,10 @@ class DBHelper {
 
   // UPDATE - Update an existing note
   Future<void> updateNote(Note note) async {
+    if (kIsWeb) {
+      return await WebStorageHelper.updateNote(note);
+    }
+    
     final db = await database;
     await db.update(
       'notes',
@@ -95,6 +116,10 @@ class DBHelper {
 
   // DELETE - Delete a note
   Future<void> deleteNote(int id) async {
+    if (kIsWeb) {
+      return await WebStorageHelper.deleteNote(id);
+    }
+    
     final db = await database;
     await db.delete(
       'notes',
@@ -105,12 +130,17 @@ class DBHelper {
 
   // DELETE ALL - Clear all notes (useful for testing)
   Future<void> deleteAllNotes() async {
+    if (kIsWeb) {
+      return await WebStorageHelper.deleteAllNotes();
+    }
+    
     final db = await database;
     await db.delete('notes');
   }
 
   // Close database connection
   Future<void> close() async {
+    if (kIsWeb) return;
     final db = await database;
     db.close();
   }
